@@ -1,5 +1,6 @@
 //
 // empty VGA driver.
+// qemu ... -device VGA -display cocoa
 //
 // pci.c maps the VGA framebuffer at 0x40000000 and
 // passes that address to vga_init().
