@@ -28,6 +28,8 @@ OBJS = \
   $K/sysfile.o \
   $K/kernelvec.o \
   $K/plic.o \
+  $K/pci.o \
+  $K/vga.o \
   $K/virtio_disk.o
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
@@ -168,6 +170,9 @@ QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-devi
 
 QEMUOPTS = -machine virt -kernel $K/kernel -m 3G -smp $(CPUS) -nographic
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+QEMUOPTS += -device VGA -display cocoa
+# QEMUOPTS += -device VGA -vga cirrus -display cocoa
+# QEMUOPTS += -device bochs-display -display cocoa
 
 qemu: $K/kernel fs.img
 	$(QEMU) $(QEMUOPTS)

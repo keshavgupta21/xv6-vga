@@ -70,6 +70,9 @@ void            begin_op(int);
 void            end_op(int);
 void            crash_op(int,int);
 
+// pci.c
+void            pci_init();
+
 // pipe.c
 int             pipealloc(struct file**, struct file**);
 void            pipeclose(struct pipe*, int);
@@ -178,6 +181,9 @@ void            plicinithart(void);
 uint64          plic_pending(void);
 int             plic_claim(void);
 void            plic_complete(int);
+
+// vga.c
+void            vga_init(char *);
 
 // virtio_disk.c
 void            virtio_disk_init(int);
