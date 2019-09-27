@@ -21,40 +21,73 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "vga.h"
 
 // maybe this is the right way to read VGA registers
 // that require the index to be written to one port,
 // and the value to be read from the next higher port.
 // the "IO ports" are actually mapped into memory
 // at 0x3000000.
-uint8
-readport(uint32 port, uint32 index)
-{
-  // write the index to the port.
-  *(uint8*)(0x3000000L + port) = index;
+uint8 readport(uint32 port, uint32 index);
+void writeport(uint32 port, uint32 index, uint8 val);
+void config_vga();
+void read_vga_config();
 
-  // read the value from port+1.
-  unsigned int x = *(uint8*)(0x3000000L + port + 1);
+void vga_init() {
+  printf("initializing VGA..\n");
+  //const uint64 vga_framebuffer = 0x40000000L;
 
-  return x;
+  // for now set mode to default from vga.h i.e. 80x25 text mode
+  config_vga();
+  printf("completed VGA initialization.\n");
+  read_vga_config();
 }
 
-void
-vga_init(char *framebuffer)
-{
-  printf("vga_init\n");
+uint8 readport(uint32 port, uint32 index) {
+  if (index == 0xff) {
+    // if index is 0xff then read directly from the port
+    return *(uint8*)(0x3000000L + port);
+  } else {
+    // write the index to the port.
+    *(uint8*)(0x3000000L + port) = index;
+    // read the value from port+1.
+    uint8 read = *(uint8*)(0x3000000L + port + 1);
 
-  // print some random VGA register values to get some
-  // confidence that we're actually talking to the
-  // qemu's emulated PCI VGA hardware. these trigger
-  // plausible-looking debug output from qemu's
-  // hw/display/vga.c.
-  printf("0x3c0 0x10 = %x\n", readport(0x3c0, 0x10));
-  printf("0x3c0 0x11 = %x\n", readport(0x3c0, 0x11));
-  printf("0x3c4 0x01 = %x\n", readport(0x3c4, 0x01));
-  printf("0x3c4 0x03 = %x\n", readport(0x3c4, 0x03));
-  printf("0x3c4 0x04 = %x\n", readport(0x3c4, 0x04));
-  printf("0x3ce 0x05 = %x\n", readport(0x3ce, 0x05));
-  printf("0x3ce 0x06 = %x\n", readport(0x3ce, 0x06));
-  printf("0x3d4 0x17 = %x\n", readport(0x3d4, 0x17));
+    if (port == 0x3c0) {
+      volatile uint8 discard __attribute__((unused)) = *(uint8*)(0x3000000L + 0x3da);
+    }
+
+    return read;
+  }
+}
+
+void writeport(uint32 port, uint32 index, uint8 val) {
+  if (index == 0xff) {
+    // if index is 0xff then write directly to the port
+    *(uint8*)(0x3000000L + port) = val;
+  } else {
+    if (port == 0x3c0) {
+      volatile uint8 discard __attribute__((unused)) = *(uint8*)(0x3000000L + 0x3da);
+    }
+    // write the index to the port.
+    *(uint8*)(0x3000000L + port) = index;
+    // write the value to port+1.
+    if (port == 0x3c0) {
+      *(uint8*)(0x3000000L + port) = val;
+    } else {
+      *(uint8*)(0x3000000L + port + 1) = val;
+    }
+  }
+}
+
+void config_vga() {
+  for (int i = 0; i < 29; i++) {
+    writeport(vga_conf_port[i], vga_conf_index[i], vga_conf_value[i]);
+  }
+}
+
+void read_vga_config() {
+  for (int i = 0; i < 29; i++) {
+    printf("Port: %x, Index: %x, Value: %x\n", vga_conf_port[i], vga_conf_index[i], readport(vga_conf_port[i], vga_conf_index[i]));
+  }
 }

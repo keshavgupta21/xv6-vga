@@ -168,9 +168,14 @@ endif
 
 QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-device,drive=x1,bus=virtio-mmio-bus.1
 
-QEMUOPTS = -machine virt -kernel $K/kernel -m 3G -smp $(CPUS) -nographic
+QEMUOPTS = -machine virt -kernel $K/kernel -m 3G -smp $(CPUS)
+ifneq (${NOUART}, 1)
+QEMUOPTS += -nographic
+endif
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
-QEMUOPTS += -device VGA -display cocoa
+ifneq (${NOVGA}, 1)
+QEMUOPTS += -device VGA -vga cirrus -vnc localhost:0
+endif
 # QEMUOPTS += -device VGA -vga cirrus -display cocoa
 # QEMUOPTS += -device bochs-display -display cocoa
 
