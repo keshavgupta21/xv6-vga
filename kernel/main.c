@@ -31,6 +31,7 @@ main()
     binit();         // buffer cache
     iinit();         // inode cache
     fileinit();      // file table
+    pci_init();      // initialize PCI interface
     virtio_disk_init(minor(ROOTDEV)); // emulated hard disk
     userinit();      // first user process
     __sync_synchronize();

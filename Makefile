@@ -31,6 +31,9 @@ OBJS = \
   $K/virtio_disk.o \
   $K/buddy.o \
   $K/list.o
+  $K/pci.o \
+  $K/vga.o \
+  $K/virtio_disk.o
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
@@ -169,8 +172,17 @@ CPUS := 3
 endif
 
 QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-device,drive=x1,bus=virtio-mmio-bus.1
-QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 3G -smp $(CPUS) -nographic
+
+QEMUOPTS = -machine virt -kernel $K/kernel -m 3G -smp $(CPUS)
+ifneq (${NOUART}, 1)
+QEMUOPTS += -nographic
+endif
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+ifneq (${NOVGA}, 1)
+QEMUOPTS += -device VGA -vga cirrus -vnc localhost:0
+endif
+# QEMUOPTS += -device VGA -vga cirrus -display cocoa
+# QEMUOPTS += -device bochs-display -display cocoa
 
 qemu: $K/kernel fs.img
 	$(QEMU) $(QEMUOPTS)
