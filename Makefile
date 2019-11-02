@@ -28,9 +28,8 @@ OBJS = \
   $K/sysfile.o \
   $K/kernelvec.o \
   $K/plic.o \
-  $K/virtio_disk.o \
   $K/buddy.o \
-  $K/list.o
+  $K/list.o \
   $K/pci.o \
   $K/vga.o \
   $K/virtio_disk.o
