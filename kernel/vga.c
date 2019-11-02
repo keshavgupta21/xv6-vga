@@ -28,66 +28,88 @@
 // and the value to be read from the next higher port.
 // the "IO ports" are actually mapped into memory
 // at 0x3000000.
-uint8 readport(uint32 port, uint32 index);
-void writeport(uint32 port, uint32 index, uint8 val);
-void config_vga();
-void read_vga_config();
+uint8 readport(uint32 port, uint8 index);
+void writeport(uint32 port, uint8 index, uint8 val);
+void dump_vga_config(); // for debug
+
+static volatile uint8 * const VGA_BASE = (uint8*) 0x3000000L;
+//const uint64 vga_framebuffer = 0x40000000L;
+volatile uint8 __attribute__((unused)) discard; // write to this to discard
 
 void vga_init() {
   printf("initializing VGA..\n");
-  //const uint64 vga_framebuffer = 0x40000000L;
+  // Disable Display
 
-  // for now set mode to default from vga.h i.e. 80x25 text mode
-  config_vga();
+  // Unlock CTRC i.e. CRT Controller (unlock registers)
+
+  // Load Registers (for now set mode to default from vga.h i.e. 80x25 text mode)
+  vga_config_t * vga_config = vga_config_text_80_25;
+  for (int i = 0; i < 29; i++) {
+    writeport(vga_config[i].port, vga_config[i].index, vga_config[i].val);
+    printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
+  }
+
+  // Clear screen
+
+  // Load fonts
+
+  // Lock CTRC i.e. CRT Controller (unlock registers)
+
+  // Enable Display
+
   printf("completed VGA initialization.\n");
-  read_vga_config();
+  dump_vga_config();
 }
 
-uint8 readport(uint32 port, uint32 index) {
-  if (index == 0xff) {
-    // if index is 0xff then read directly from the port
-    return *(uint8*)(0x3000000L + port);
-  } else {
-    // write the index to the port.
-    *(uint8*)(0x3000000L + port) = index;
-    // read the value from port+1.
-    uint8 read = *(uint8*)(0x3000000L + port + 1);
-
-    if (port == 0x3c0) {
-      volatile uint8 discard __attribute__((unused)) = *(uint8*)(0x3000000L + 0x3da);
-    }
-
-    return read;
+uint8 readport(uint32 port, uint8 index) {
+  uint8 read;
+  discard = VGA_BASE[0x3da];
+  switch (port) {
+    case 0x3c0:
+      VGA_BASE[0x3c0] = index;
+      read = VGA_BASE[0x3c1];
+    break;
+    case 0x3c2:
+      read = VGA_BASE[0x3cc];
+    break;
+    case 0x3c4:
+    case 0x3ce:
+    case 0x3d4:
+    VGA_BASE[port] = index;
+    read = VGA_BASE[port + 1];
+    break;
+    default:
+      read = 0xff;
+    break;
   }
+  discard = VGA_BASE[0x3da];
+  return read;
 }
 
-void writeport(uint32 port, uint32 index, uint8 val) {
-  if (index == 0xff) {
-    // if index is 0xff then write directly to the port
-    *(uint8*)(0x3000000L + port) = val;
-  } else {
-    if (port == 0x3c0) {
-      volatile uint8 discard __attribute__((unused)) = *(uint8*)(0x3000000L + 0x3da);
-    }
-    // write the index to the port.
-    *(uint8*)(0x3000000L + port) = index;
-    // write the value to port+1.
-    if (port == 0x3c0) {
-      *(uint8*)(0x3000000L + port) = val;
-    } else {
-      *(uint8*)(0x3000000L + port + 1) = val;
-    }
+void writeport(uint32 port, uint8 index, uint8 val) {
+  discard = VGA_BASE[0x3da];
+  switch (port) {
+    case 0x3c0:
+      VGA_BASE[0x3c0] = index;
+      VGA_BASE[0x3c0] = val;
+    break;
+    case 0x3c2:
+      VGA_BASE[0x3c2] = val;
+    break;
+    case 0x3c4:
+    case 0x3ce:
+    case 0x3d4:
+    VGA_BASE[port] = index;
+    VGA_BASE[port + 1] = val;
+    break;
   }
+  discard = VGA_BASE[0x3da];
 }
 
-void config_vga() {
+void dump_vga_config() {
+  vga_config_t * vga_config = vga_config_text_80_25;
   for (int i = 0; i < 29; i++) {
-    writeport(vga_conf_port[i], vga_conf_index[i], vga_conf_value[i]);
+    printf("Port: %x, Index: %x, Value: %x\n", vga_config[i].port, vga_config[i].index, readport(vga_config[i].port, vga_config[i].index));
   }
-}
-
-void read_vga_config() {
-  for (int i = 0; i < 29; i++) {
-    printf("Port: %x, Index: %x, Value: %x\n", vga_conf_port[i], vga_conf_index[i], readport(vga_conf_port[i], vga_conf_index[i]));
-  }
+  printf("Value at 0x3c4, 0x04 might be incorrect\n");
 }
