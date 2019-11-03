@@ -62,6 +62,13 @@ void vga_init(char * vga_framebuffer) {
     printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
   }
 
+  writeport(0x3c8, 0xff, 0x00);
+  for (int i = 0; i < 256; i++) {
+    writeport(0x3c9, 0xff, 0xff);
+    writeport(0x3c9, 0xff, 0xff);
+    writeport(0x3c9, 0xff, 0xff);
+  }
+
   VGA_MMIO[0] = 'A';
   VGA_MMIO[1] = 'A';
   // Clear screen
@@ -96,6 +103,9 @@ uint8 readport(uint32 port, uint8 index) {
     case 0x3d6:
       read = VGA_BASE[0x3d6];
     break;
+    case 0x3c9:
+      read = VGA_BASE[0x3c9];
+    break;
     default:
       read = 0xff;
     break;
@@ -122,6 +132,11 @@ void writeport(uint32 port, uint8 index, uint8 val) {
     break;
     case 0x3d6:
       VGA_BASE[0x3d6] = val;
+    break;
+    case 0x3c7:
+    case 0x3c8:
+    case 0x3c9:
+      VGA_BASE[port] = val;
     break;
   }
   discard = VGA_BASE[0x3da];
