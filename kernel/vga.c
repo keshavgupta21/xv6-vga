@@ -44,7 +44,7 @@ void vga_init(char * vga_framebuffer) {
   // Unlock CTRC i.e. CRT Controller (unlock registers)
 
   // Load Registers (for now set mode to default from vga.h i.e. 80x25 text mode)
-  vga_config_t * vga_config = vga_config_text_80_25;
+  vga_config_t * vga_config = vga_config_text_320_200;
   for (int i = 0; i < 69; i++) {
     writeport(vga_config[i].port, vga_config[i].index, vga_config[i].val);
     printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
