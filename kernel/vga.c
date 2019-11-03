@@ -22,6 +22,7 @@
 #include "proc.h"
 #include "defs.h"
 #include "vga.h"
+#include "font.h"
 
 // maybe this is the right way to read VGA registers
 // that require the index to be written to one port,
@@ -33,10 +34,10 @@ void writeport(uint32 port, uint8 index, uint8 val);
 void dump_vga_config(); // for debug
 
 static volatile uint8 * const VGA_BASE = (uint8*) 0x3000000L;
-//const uint64 vga_framebuffer = 0x40000000L;
+static volatile uint8 * const VGA_MMIO = (uint8*) KERNBASE + 0xA0000;
 volatile uint8 __attribute__((unused)) discard; // write to this to discard
 
-void vga_init() {
+void vga_init(char * vga_framebuffer) {
   printf("initializing VGA..\n");
   // Disable Display
 
@@ -44,16 +45,30 @@ void vga_init() {
 
   // Load Registers (for now set mode to default from vga.h i.e. 80x25 text mode)
   vga_config_t * vga_config = vga_config_text_80_25;
-  for (int i = 0; i < 29; i++) {
+  for (int i = 0; i < 69; i++) {
     writeport(vga_config[i].port, vga_config[i].index, vga_config[i].val);
     printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
   }
 
+  // planes 0, 2 are accessed on even addresses
+  for (int i = 0; i < 4096; i += 16) {
+    for (int j = 0; j < 16; j++) {
+      VGA_MMIO[2 * i + j] = VGA_FONT[i + j];
+    }
+  }
+
+  for (int i = 69; i < 79; i++) {
+    writeport(vga_config[i].port, vga_config[i].index, vga_config[i].val);
+    printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
+  }
+
+  VGA_MMIO[0] = 'A';
+  VGA_MMIO[1] = 'A';
   // Clear screen
 
   // Load fonts
 
-  // Lock CTRC i.e. CRT Controller (unlock registers)
+  // Lock CRTC i.e. CRT Controller (unlock registers)
 
   // Enable Display
 
@@ -114,7 +129,7 @@ void writeport(uint32 port, uint8 index, uint8 val) {
 
 void dump_vga_config() {
   vga_config_t * vga_config = vga_config_text_80_25;
-  for (int i = 0; i < 29; i++) {
+  for (int i = 0; i < 80; i++) {
     printf("Port: %x, Index: %x, Value: %x\n", vga_config[i].port, vga_config[i].index, readport(vga_config[i].port, vga_config[i].index));
   }
   printf("Value at 0x3c4, 0x04 might be incorrect\n");
