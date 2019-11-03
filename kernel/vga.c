@@ -22,7 +22,7 @@
 #include "proc.h"
 #include "defs.h"
 #include "vga.h"
-#include "font.h"
+#include "palette.h"
 
 // maybe this is the right way to read VGA registers
 // that require the index to be written to one port,
@@ -34,53 +34,32 @@ void writeport(uint32 port, uint8 index, uint8 val);
 void dump_vga_config(); // for debug
 
 static volatile uint8 * const VGA_BASE = (uint8*) 0x3000000L;
-static volatile uint8 * const VGA_MMIO = (uint8*) KERNBASE + 0xA0000;
+//static volatile uint8 * const VGA_MMIO = (uint8*) KERNBASE + 0xA0000;
 volatile uint8 __attribute__((unused)) discard; // write to this to discard
 
 void vga_init(char * vga_framebuffer) {
   printf("initializing VGA..\n");
-  // Disable Display
 
-  // Unlock CTRC i.e. CRT Controller (unlock registers)
-
-  // Load Registers (for now set mode to default from vga.h i.e. 80x25 text mode)
-  vga_config_t * vga_config = vga_config_text_320_200;
-  for (int i = 0; i < 69; i++) {
+  // Load graphics mode config
+  vga_config_t * vga_config = vga_config_img_320_300;
+  for (int i = 0; i < 56; i++) {
     writeport(vga_config[i].port, vga_config[i].index, vga_config[i].val);
-    printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
+    //printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
   }
 
-  // planes 0, 2 are accessed on even addresses
-  for (int i = 0; i < 4096; i += 16) {
-    for (int j = 0; j < 16; j++) {
-      VGA_MMIO[2 * i + j] = VGA_FONT[i + j];
-    }
-  }
-
-  for (int i = 69; i < 79; i++) {
-    writeport(vga_config[i].port, vga_config[i].index, vga_config[i].val);
-    printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
-  }
-
+  // Set default VGA palette
   writeport(0x3c8, 0xff, 0x00);
   for (int i = 0; i < 256; i++) {
-    writeport(0x3c9, 0xff, 0xff);
-    writeport(0x3c9, 0xff, 0xff);
-    writeport(0x3c9, 0xff, 0xff);
+    writeport(0x3c9, 0xff, (std_palette[i] & 0xfc0000) >> 18);
+    writeport(0x3c9, 0xff, (std_palette[i] & 0x00fc00) >> 10);
+    writeport(0x3c9, 0xff, (std_palette[i] & 0x0000fc) >> 2);
   }
 
-  vga_framebuffer[0] = 'A';
-  vga_framebuffer[1] = 'A';
-  // Clear screen
-
-  // Load fonts
-
-  // Lock CRTC i.e. CRT Controller (unlock registers)
-
-  // Enable Display
+  for (int i = 0; i < 256; i++) {
+    vga_framebuffer[i] = i;
+  }
 
   printf("completed VGA initialization.\n");
-  dump_vga_config();
 }
 
 uint8 readport(uint32 port, uint8 index) {
@@ -144,7 +123,7 @@ void writeport(uint32 port, uint8 index, uint8 val) {
 
 void dump_vga_config() {
   vga_config_t * vga_config = vga_config_text_80_25;
-  for (int i = 0; i < 80; i++) {
+  for (int i = 0; i < 56; i++) {
     printf("Port: %x, Index: %x, Value: %x\n", vga_config[i].port, vga_config[i].index, readport(vga_config[i].port, vga_config[i].index));
   }
   printf("Value at 0x3c4, 0x04 might be incorrect\n");
