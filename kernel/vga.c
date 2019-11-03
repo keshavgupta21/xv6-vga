@@ -55,8 +55,10 @@ void vga_init(char * vga_framebuffer) {
     writeport(0x3c9, 0xff, (std_palette[i] & 0x0000fc) >> 2);
   }
 
-  for (int i = 0; i < 256; i++) {
-    vga_framebuffer[i] = i;
+  for (int x = 0; x < 320; x++) {
+    for (int y = 0; y < 200; y++) {
+      vga_framebuffer[y * 320 + x] = (x/20)*16 + (y/13);
+    }
   }
 
   printf("completed VGA initialization.\n");
