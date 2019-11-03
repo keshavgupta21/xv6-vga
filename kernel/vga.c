@@ -69,8 +69,8 @@ void vga_init(char * vga_framebuffer) {
     writeport(0x3c9, 0xff, 0xff);
   }
 
-  VGA_MMIO[0] = 'A';
-  VGA_MMIO[1] = 'A';
+  vga_framebuffer[0] = 'A';
+  vga_framebuffer[1] = 'A';
   // Clear screen
 
   // Load fonts
