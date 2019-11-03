@@ -75,8 +75,11 @@ uint8 readport(uint32 port, uint8 index) {
     case 0x3c4:
     case 0x3ce:
     case 0x3d4:
-    VGA_BASE[port] = index;
-    read = VGA_BASE[port + 1];
+      VGA_BASE[port] = index;
+      read = VGA_BASE[port + 1];
+    break;
+    case 0x3d6:
+      read = VGA_BASE[0x3d6];
     break;
     default:
       read = 0xff;
@@ -99,8 +102,11 @@ void writeport(uint32 port, uint8 index, uint8 val) {
     case 0x3c4:
     case 0x3ce:
     case 0x3d4:
-    VGA_BASE[port] = index;
-    VGA_BASE[port + 1] = val;
+      VGA_BASE[port] = index;
+      VGA_BASE[port + 1] = val;
+    break;
+    case 0x3d6:
+      VGA_BASE[0x3d6] = val;
     break;
   }
   discard = VGA_BASE[0x3da];
