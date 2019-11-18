@@ -23,6 +23,7 @@
 #include "defs.h"
 #include "vga.h"
 #include "palette.h"
+#include "font.h"
 
 // maybe this is the right way to read VGA registers
 // that require the index to be written to one port,
@@ -37,14 +38,25 @@ static volatile uint8 * const VGA_BASE = (uint8*) 0x3000000L;
 //static volatile uint8 * const VGA_MMIO = (uint8*) KERNBASE + 0xA0000;
 volatile uint8 __attribute__((unused)) discard; // write to this to discard
 
+char * vga_buf;
+
 void vga_init(char * vga_framebuffer) {
-  printf("initializing VGA..\n");
+  // printf("initializing VGA..\n");
+  vga_buf = vga_framebuffer;
 
   // Load graphics mode config
   vga_config_t * vga_config = vga_config_img_320_300;
   for (int i = 0; i < 56; i++) {
     writeport(vga_config[i].port, vga_config[i].index, vga_config[i].val);
     //printf("Writing at port %x index %x value %x\n", vga_config[i].port, vga_config[i].index, vga_config[i].val);
+  }
+
+  // configure a custom VGA palette
+  for (int i = 0; i < 256; i++) {
+    std_palette[i] = 0;
+    std_palette[i] |= ((i & 0xc0)) << 16;
+    std_palette[i] |= ((i & 0x38) << 2) << 8;
+    std_palette[i] |= ((i & 0x07) << 5);
   }
 
   // Set default VGA palette
@@ -57,11 +69,42 @@ void vga_init(char * vga_framebuffer) {
 
   for (int x = 0; x < 320; x++) {
     for (int y = 0; y < 200; y++) {
-      vga_framebuffer[y * 320 + x] = (x/20)*16 + (y/13);
+      vga_buf[y * 320 + x] = (((x + 1)%320)/20)*16 + (y/13);
     }
   }
 
+  show_window("elene machaidze");
+
   printf("completed VGA initialization.\n");
+}
+
+void draw_char(char c, int x, int y) {
+  for (int row = 0; row < 8; row++) {
+    for (int col = 0; col < 5; col++) {
+      if (VGA_FONT[c * 8 + row] & (1 << (7 - col))) {
+        vga_buf[(row + y) * 320 + (col + x)] = 0x00;
+      }
+    }
+  }
+}
+
+void show_window(char * text) {
+  int n = strlen((const char *) text);
+  int w = (n + 2) * 5;
+  int h = 18;
+  int x0 = 160 - w/2;
+  int y0 = 100 - h/2;
+
+  for (int x = x0; x < x0 + w; x++) {
+    for (int y = y0; y < y0 + h; y++) {
+      vga_buf[y * 320 + x] = 0xff;
+    }
+  }
+  int pos = x0 + 5;
+  for (char *c = text; *c != 0; c++) {
+    draw_char(*c, pos, y0 + 5);
+    pos += 5;
+  }
 }
 
 uint8 readport(uint32 port, uint8 index) {
