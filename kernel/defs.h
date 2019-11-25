@@ -185,6 +185,7 @@ void            plic_complete(int);
 // vga.c
 void            vga_init();
 void            show_window(char *);
+uint64          window_intr(int);
 
 // virtio_disk.c
 void            virtio_disk_init(int);

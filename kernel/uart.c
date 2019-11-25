@@ -87,6 +87,8 @@ uartintr(void)
     int c = uartgetc();
     if(c == -1)
       break;
-    consoleintr(c);
+    if(!window_intr(c)) {
+      consoleintr(c);
+    }
   }
 }

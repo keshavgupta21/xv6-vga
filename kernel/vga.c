@@ -25,6 +25,8 @@
 #include "palette.h"
 #include "font.h"
 
+int window_en = 0;
+
 // maybe this is the right way to read VGA registers
 // that require the index to be written to one port,
 // and the value to be read from the next higher port.
@@ -73,8 +75,6 @@ void vga_init(char * vga_framebuffer) {
     }
   }
 
-  show_window("elene machaidze");
-
   printf("completed VGA initialization.\n");
 }
 
@@ -105,6 +105,24 @@ void show_window(char * text) {
     draw_char(*c, pos, y0 + 5);
     pos += 5;
   }
+}
+
+uint64 window_intr(int c) {
+  if (c == '*') {
+    for (int x = 0; x < 320; x++) {
+      for (int y = 0; y < 200; y++) {
+        vga_buf[y * 320 + x] = (((x + 1)%320)/20)*16 + (y/13);
+      }
+    }
+    // input was used
+    return 1;
+  } else if (c == '&') {
+    show_window("elene machaidze");
+    // input was used
+    return 1;
+  }
+  // input was not used
+  return 0;
 }
 
 uint8 readport(uint32 port, uint8 index) {
