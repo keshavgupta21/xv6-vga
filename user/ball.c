@@ -5,8 +5,10 @@
 
 #define BACKGROUND_COLOR 0xf0
 #define BALL_COLOR 0xff
+#define PAD_COLOR 0xff
 #define WINDOW_WIDTH 100
 #define WINDOW_HEIGHT 95
+#define PADDING_SIZE 1
 #define BALL_WIDTH 5
 
 char fbuf[WINDOW_HEIGHT][WINDOW_WIDTH];
@@ -17,6 +19,17 @@ static void draw_background() {
   for (int i = 0; i < WINDOW_HEIGHT; i++) {
     for (int j = 0; j < WINDOW_WIDTH; j++) {
       fbuf[i][j] = BACKGROUND_COLOR;
+    }
+  }
+  return;
+}
+static void draw_padding() {
+  for (int i = 0; i < WINDOW_HEIGHT; i++) {
+    for (int j = 0; j < WINDOW_WIDTH; j++) {
+      if (i < PADDING_SIZE || i + PADDING_SIZE >= WINDOW_HEIGHT ||
+          j < PADDING_SIZE || j + PADDING_SIZE >= WINDOW_WIDTH) {
+          fbuf[i][j] = PAD_COLOR;
+      }
     }
   }
   return;
@@ -39,6 +52,7 @@ static void draw_ball() {
 
 void main(void) {
   draw_background();
+  draw_padding();
 
   ball_center_x = WINDOW_WIDTH / 2;
   ball_center_y = WINDOW_HEIGHT / 2;
