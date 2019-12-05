@@ -13,7 +13,9 @@
 
 char fbuf[WINDOW_HEIGHT][WINDOW_WIDTH];
 char __attribute((unused)) discard;
+
 int ball_center_x, ball_center_y;
+int ball_vel_x, ball_vel_y; // in pixels
 
 static void draw_background() {
   for (int i = 0; i < WINDOW_HEIGHT; i++) {
@@ -50,15 +52,44 @@ static void draw_ball() {
   return;
 }
 
-void main(void) {
-  draw_background();
-  draw_padding();
+static void flip_vel_x() {
+  ball_vel_x *= -1;
+  ball_vel_y *= -1;
+  return;
+}
 
+static void update_center() {
+  ball_center_x += ball_vel_x;
+  if (ball_center_x - BALL_WIDTH <= 0 ||
+      ball_center_x + BALL_WIDTH >= WINDOW_WIDTH) {
+    flip_vel_x();
+  }
+  ball_center_y += ball_vel_y;
+  if (ball_center_y - BALL_WIDTH <= 0 ||
+      ball_center_y + BALL_WIDTH >= WINDOW_HEIGHT) {
+    flip_vel_x();
+  }
+  return;
+}
+
+void main(void) {
   ball_center_x = WINDOW_WIDTH / 2;
   ball_center_y = WINDOW_HEIGHT / 2;
-  draw_ball();
+  ball_vel_x = 2;
+  ball_vel_y = 1;
 
-  show_window((char*) fbuf);
+  while (1) {
+    draw_background();
+    draw_padding();
+    draw_ball();
+    show_window((char*) fbuf);
+
+    sleep(1);
+    update_center();
+  }
+
+
+  
   read(0, &discard, 1);
   close_window();
   exit(0);
