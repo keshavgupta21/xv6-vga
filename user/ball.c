@@ -54,6 +54,10 @@ static void draw_ball() {
 
 static void flip_vel_x() {
   ball_vel_x *= -1;
+  return;
+}
+
+static void flip_vel_y() {
   ball_vel_y *= -1;
   return;
 }
@@ -67,7 +71,7 @@ static void update_center() {
   ball_center_y += ball_vel_y;
   if (ball_center_y - BALL_WIDTH <= 0 ||
       ball_center_y + BALL_WIDTH >= WINDOW_HEIGHT) {
-    flip_vel_x();
+    flip_vel_y();
   }
   return;
 }
