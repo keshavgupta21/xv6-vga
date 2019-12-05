@@ -26,3 +26,6 @@
 #define SYS_crash  23
 #define SYS_mount  24
 #define SYS_umount 25
+
+#define SYS_show_window 26
+#define SYS_close_window 27

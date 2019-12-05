@@ -27,22 +27,20 @@
 
 #define C(x)  ((x)-'@')  // Control-x
 
-int window_en = 0;
-
-// maybe this is the right way to read VGA registers
-// that require the index to be written to one port,
-// and the value to be read from the next higher port.
-// the "IO ports" are actually mapped into memory
-// at 0x3000000.
 uint8 readport(uint32 port, uint8 index);
 void writeport(uint32 port, uint8 index, uint8 val);
-void dump_vga_config(); // for debug
+
+
+volatile uint8 __attribute__((unused)) discard; // write to this to discard
+char * vga_buf;
+window_t windows[6] = {{.pid = -1},
+                       {.pid = -1},
+                       {.pid = -1},
+                       {.pid = -1},
+                       {.pid = -1},
+                       {.pid = -1}};
 
 static volatile uint8 * const VGA_BASE = (uint8*) 0x3000000L;
-//static volatile uint8 * const VGA_MMIO = (uint8*) KERNBASE + 0xA0000;
-volatile uint8 __attribute__((unused)) discard; // write to this to discard
-
-char * vga_buf;
 
 void vga_init(char * vga_framebuffer) {
   // printf("initializing VGA..\n");
@@ -72,60 +70,14 @@ void vga_init(char * vga_framebuffer) {
     writeport(0x3c9, 0xff, (std_palette[i] & 0x0000fc) >> 2);
   }
 
-  for (int x = 0; x < 320; x++) {
-    for (int y = 0; y < 200; y++) {
-      vga_buf[y * 320 + x] = (((x + 1)%320)/20)*16 + (y/13);
+  // set the background
+  for (int x = 0; x < WIDTH; x++) {
+    for (int y = 0; y < HEIGHT; y++) {
+      vga_buf[y * WIDTH + x] = BACKGROUND;
     }
   }
 
   printf("completed VGA initialization.\n");
-}
-
-void draw_char(char c, int x, int y) {
-  for (int row = 0; row < 8; row++) {
-    for (int col = 0; col < 5; col++) {
-      if (VGA_FONT[c * 8 + row] & (1 << (7 - col))) {
-        vga_buf[(row + y) * 320 + (col + x)] = 0x00;
-      }
-    }
-  }
-}
-
-void show_window(char * text) {
-  int n = strlen((const char *) text);
-  int w = (n + 2) * 5;
-  int h = 18;
-  int x0 = 160 - w/2;
-  int y0 = 100 - h/2;
-
-  for (int x = x0; x < x0 + w; x++) {
-    for (int y = y0; y < y0 + h; y++) {
-      vga_buf[y * 320 + x] = 0xff;
-    }
-  }
-  int pos = x0 + 5;
-  for (char *c = text; *c != 0; c++) {
-    draw_char(*c, pos, y0 + 5);
-    pos += 5;
-  }
-}
-
-uint64 window_intr(int c) {
-  if (c == C('X')) {
-    for (int x = 0; x < 320; x++) {
-      for (int y = 0; y < 200; y++) {
-        vga_buf[y * 320 + x] = (((x + 1)%320)/20)*16 + (y/13);
-      }
-    }
-    // input was used
-    return 1;
-  } else if (c == C('Z')) {
-    show_window("elene machaidze");
-    // input was used
-    return 1;
-  }
-  // input was not used
-  return 0;
 }
 
 uint8 readport(uint32 port, uint8 index) {
@@ -187,10 +139,94 @@ void writeport(uint32 port, uint8 index, uint8 val) {
   discard = VGA_BASE[0x3da];
 }
 
-void dump_vga_config() {
-  vga_config_t * vga_config = vga_config_text_80_25;
-  for (int i = 0; i < 56; i++) {
-    printf("Port: %x, Index: %x, Value: %x\n", vga_config[i].port, vga_config[i].index, readport(vga_config[i].port, vga_config[i].index));
+// WINDOW MANAGER FUNCTIONALITY
+
+void draw_char(char c, int x, int y) {
+  for (int row = 0; row < 8; row++) {
+    for (int col = 0; col < 5; col++) {
+      if (VGA_FONT[c * 8 + row] & (1 << (7 - col))) {
+        vga_buf[(row + y) * WIDTH + (col + x)] = 0x00;
+      }
+    }
   }
-  printf("Value at 0x3c4, 0x04 might be incorrect\n");
+}
+
+void show_window_text(char * text, int x0, int y0) {
+  int n = strlen((const char *) text);
+  int w = (n + 2) * 5;
+  int h = 18;
+
+  for (int x = x0; x < x0 + w; x++) {
+    for (int y = y0; y < y0 + h; y++) {
+      vga_buf[y * WIDTH + x] = 0xff;
+    }
+  }
+  int pos = x0 + 5;
+  for (char *c = text; *c != 0; c++) {
+    draw_char(*c, pos, y0 + 5);
+    pos += 5;
+  }
+}
+
+void render_window(int win_loc) {
+  int x0 = (win_loc % 3) * (WINDOW_WIDTH + WINDOW_PAD);
+  int y0 = (win_loc / 3) * (WINDOW_HEIGHT + WINDOW_PAD);
+  
+  for (int y = y0; y < y0 + WINDOW_HEIGHT; y++) {
+    for (int x = x0; x < x0 + WINDOW_WIDTH; x++) {
+      vga_buf[y * WIDTH + x] = windows[win_loc].fbuf[(y - y0)*WINDOW_WIDTH + (x - x0)];
+    }
+  }
+}
+
+uint64 sys_show_window() {
+  uint64 fbuf_usr;
+  if (argaddr(0, &fbuf_usr) < 0) { return -1; }
+  struct proc * p = myproc();
+  int win_loc = -1, empty_loc = -1;
+  for (int i = 5; i >= 0; i--) {
+    if (windows[i].pid == p->pid) {
+      win_loc = i;
+    }
+    if (windows[i].pid == -1) {
+      empty_loc = i;
+    }
+  }
+  if (win_loc == -1) {
+    if (empty_loc == -1) {
+      return -1;
+    } else {
+      win_loc = empty_loc;
+      windows[win_loc].pid = p->pid;
+    }
+  }
+
+  copyin(p->pagetable, windows[win_loc].fbuf, fbuf_usr, WINDOW_WIDTH * WINDOW_HEIGHT);
+
+  render_window(win_loc);
+
+  return 0;
+}
+
+uint64 sys_close_window() {
+  struct proc * p = myproc();
+  for (int win_loc = 5; win_loc >= 0; win_loc--) {
+    if (windows[win_loc].pid == p->pid) {
+      windows[win_loc].pid = -1;
+      for (int i = 0; i < WINDOW_HEIGHT; i++) {
+        for (int j = 0; j < WINDOW_WIDTH; j++) {
+          windows[win_loc].fbuf[i*WINDOW_WIDTH + j] = BACKGROUND;
+        }
+      }
+      render_window(win_loc);
+      return 0;
+    }
+  }
+  return -1;
+}
+
+uint64 window_intr(int c) {
+  
+  // input was not used
+  return 0;
 }

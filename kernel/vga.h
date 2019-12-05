@@ -1,8 +1,21 @@
+static const uint8 BACKGROUND = 0x2f;
+#define WIDTH 320
+#define HEIGHT 200
+#define WINDOW_WIDTH 100
+#define WINDOW_HEIGHT 95
+#define WINDOW_PAD 10
+
 typedef struct {
     uint32 port;
     uint8 index;
     uint8 val;
 } vga_config_t;
+
+typedef struct {
+    int pid;
+    char fbuf[WINDOW_HEIGHT * WINDOW_WIDTH];
+    void (*key_cb)(int);
+} window_t;
 
 vga_config_t vga_config_img_320_300[] = {
     // Miscelleneous Output Register
@@ -196,35 +209,3 @@ vga_config_t vga_config_text_80_25[] = {
     // Enable display
     {.port = 0x3c0, .index = 0xff, .val = 0x20}, // 79
 };
-
-typedef enum {
-    Mode_Control_1 = 0,
-    Overscan_Register,
-    Color_Plane_Enable,
-    Horizontal_Panning,
-    Color_Select,
-    Miscellaneous_Output_Register,
-    Clock_Mode_Register,
-    Character_select,
-    Memory_Mode_Register,
-    Mode_Register,
-    Miscellaneous_Register,
-    Horizontal_Total,
-    Horizontal_Display_Enable_End,
-    Horizontal_Blank_Start,
-    Horizontal_Blank_End,
-    Horizontal_Retrace_Start,
-    Horizontal_Retrace_End,
-    Vertical_Total,
-    Overflow_Register,
-    Preset_Row_Scan,
-    Maximum_Scan_Line,
-    Vertical_Retrace_Start,
-    Vertical_Retrace_End,
-    Vertical_Display_Enable_End,
-    Logical_Width,
-    Underline_Location,
-    Vertical_Blank_Start,
-    Vertical_Blank_End,
-    Mode_Control_2
-} REG_NAMES;

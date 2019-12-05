@@ -184,8 +184,10 @@ void            plic_complete(int);
 
 // vga.c
 void            vga_init();
-void            show_window(char *);
+void            show_window_text(char *, int, int);
 uint64          window_intr(int);
+uint64          sys_show_window();
+uint64          sys_close_window();
 
 // virtio_disk.c
 void            virtio_disk_init(int);

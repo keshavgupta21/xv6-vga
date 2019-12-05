@@ -40,3 +40,5 @@ entry("ntas");
 entry("crash");
 entry("mount");
 entry("umount");
+entry("show_window");
+entry("close_window");
