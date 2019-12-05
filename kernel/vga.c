@@ -25,6 +25,8 @@
 #include "palette.h"
 #include "font.h"
 
+#define C(x)  ((x)-'@')  // Control-x
+
 int window_en = 0;
 
 // maybe this is the right way to read VGA registers
@@ -60,6 +62,7 @@ void vga_init(char * vga_framebuffer) {
     std_palette[i] |= ((i & 0x38) << 2) << 8;
     std_palette[i] |= ((i & 0x07) << 5);
   }
+  std_palette[255] = 0xfcfcfc;
 
   // Set default VGA palette
   writeport(0x3c8, 0xff, 0x00);
@@ -108,7 +111,7 @@ void show_window(char * text) {
 }
 
 uint64 window_intr(int c) {
-  if (c == '*') {
+  if (c == C('X')) {
     for (int x = 0; x < 320; x++) {
       for (int y = 0; y < 200; y++) {
         vga_buf[y * 320 + x] = (((x + 1)%320)/20)*16 + (y/13);
@@ -116,7 +119,7 @@ uint64 window_intr(int c) {
     }
     // input was used
     return 1;
-  } else if (c == '&') {
+  } else if (c == C('Z')) {
     show_window("elene machaidze");
     // input was used
     return 1;
