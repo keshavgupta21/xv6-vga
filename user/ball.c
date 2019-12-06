@@ -11,6 +11,11 @@
 #define PADDING_SIZE 1
 #define BALL_WIDTH 5
 
+#define UP_ARROW 24
+#define DOWN_ARROW 25
+#define RIGHT_ARROW 26
+#define LEFT_ARROW 27
+
 char fbuf[WINDOW_HEIGHT][WINDOW_WIDTH];
 char __attribute((unused)) discard;
 
@@ -74,6 +79,28 @@ static void update_center() {
     flip_vel_y();
   }
   return;
+}
+
+static int abs(int x) {
+  if (x >= 0) {
+    return x;
+  }
+  return -x;
+}
+
+void key_handler(char key) {
+  if (key == UP_ARROW) {
+    ball_vel_x = abs(ball_vel_x);
+  }
+  else if (key == DOWN_ARROW) {
+    ball_vel_x = -abs(ball_vel_x);
+  }
+  else if (key == RIGHT_ARROW) {
+    ball_vel_y = abs(ball_vel_y);
+  }
+  else if (key == LEFT_ARROW) {
+    ball_vel_y = -abs(ball_vel_y);
+  }
 }
 
 void main(void) {
