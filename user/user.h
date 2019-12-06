@@ -29,6 +29,8 @@ int mount(char*, char *);
 int umount(char*);
 int show_window(char*);
 int close_window();
+int reg_keycb(void (*keycb)(uint64, uint64));
+int cb_return();
 
 // ulib.c
 int stat(const char*, struct stat*);

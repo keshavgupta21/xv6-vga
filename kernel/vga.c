@@ -27,18 +27,23 @@
 
 #define C(x)  ((x)-'@')  // Control-x
 
+#define NO_KEYCB 0xffffffffffffffffull
+
 uint8 readport(uint32 port, uint8 index);
 void writeport(uint32 port, uint8 index, uint8 val);
 
 
 volatile uint8 __attribute__((unused)) discard; // write to this to discard
 char * vga_buf;
-window_t windows[6] = {{.pid = -1},
-                       {.pid = -1},
-                       {.pid = -1},
-                       {.pid = -1},
-                       {.pid = -1},
-                       {.pid = -1}};
+
+int selected_win = -1;
+
+window_t windows[6] = {{.pid = -1, .key_cb = NO_KEYCB},
+                       {.pid = -1, .key_cb = NO_KEYCB},
+                       {.pid = -1, .key_cb = NO_KEYCB},
+                       {.pid = -1, .key_cb = NO_KEYCB},
+                       {.pid = -1, .key_cb = NO_KEYCB},
+                       {.pid = -1, .key_cb = NO_KEYCB}};
 
 static volatile uint8 * const VGA_BASE = (uint8*) 0x3000000L;
 
@@ -197,7 +202,9 @@ uint64 sys_show_window() {
       return -1;
     } else {
       win_loc = empty_loc;
+      selected_win = win_loc;
       windows[win_loc].pid = p->pid;
+      windows[win_loc].proc = p;
     }
   }
 
@@ -213,6 +220,7 @@ uint64 sys_close_window() {
   for (int win_loc = 5; win_loc >= 0; win_loc--) {
     if (windows[win_loc].pid == p->pid) {
       windows[win_loc].pid = -1;
+      if (win_loc == selected_win) { selected_win = -1; }
       for (int i = 0; i < WINDOW_HEIGHT; i++) {
         for (int j = 0; j < WINDOW_WIDTH; j++) {
           windows[win_loc].fbuf[i*WINDOW_WIDTH + j] = BACKGROUND;
@@ -225,8 +233,156 @@ uint64 sys_close_window() {
   return -1;
 }
 
+uint64 sys_reg_keycb() {
+  printf("reg cb called from pid %d\n", myproc()->pid);
+  uint64 keycbaddr;
+  argaddr(0, &keycbaddr);
+  struct proc * p = myproc();
+  for (int win_loc = 5; win_loc >= 0; win_loc--) {
+    if (windows[win_loc].proc == p) {
+      printf("setting window %d keycb to %p\n", win_loc, keycbaddr);
+      windows[win_loc].key_cb = keycbaddr;
+      return 0;
+    }
+  }
+  int empty_loc = -1;
+  for (int i = 5; i >= 0; i--) {
+    if (windows[i].pid == -1) {
+      empty_loc = i;
+    }
+  }
+  if (empty_loc == -1) {
+    return -1;
+  } else {
+    windows[empty_loc].pid = p->pid;
+    windows[empty_loc].proc = p;
+    windows[empty_loc].key_cb = keycbaddr;
+    selected_win = empty_loc;
+  }
+  return 0;
+}
+
+void saveregs(struct proc *p) {
+    p->cb.epc = p->tf->epc;
+    p->cb.ra = p->tf->ra;
+    p->cb.sp = p->tf->sp;
+    p->cb.gp = p->tf->gp;
+    p->cb.tp = p->tf->tp;
+    p->cb.t0 = p->tf->t0;
+    p->cb.t1 = p->tf->t1;
+    p->cb.t2 = p->tf->t2;
+    p->cb.s0 = p->tf->s0;
+    p->cb.s1 = p->tf->s1;
+    p->cb.a0 = p->tf->a0;
+    p->cb.a1 = p->tf->a1;
+    p->cb.a2 = p->tf->a2;
+    p->cb.a3 = p->tf->a3;
+    p->cb.a4 = p->tf->a4;
+    p->cb.a5 = p->tf->a5;
+    p->cb.a6 = p->tf->a6;
+    p->cb.a7 = p->tf->a7;
+    p->cb.s2 = p->tf->s2;
+    p->cb.s3 = p->tf->s3;
+    p->cb.s4 = p->tf->s4;
+    p->cb.s5 = p->tf->s5;
+    p->cb.s6 = p->tf->s6;
+    p->cb.s7 = p->tf->s7;
+    p->cb.s8 = p->tf->s8;
+    p->cb.s9 = p->tf->s9;
+    p->cb.s10 = p->tf->s10;
+    p->cb.s11 = p->tf->s11;
+    p->cb.t3 = p->tf->t3;
+    p->cb.t4 = p->tf->t4;
+    p->cb.t5 = p->tf->t5;
+    p->cb.t6 = p->tf->t6;
+}
+
+void restoreregs(struct proc *p) {
+    p->tf->epc = p->cb.epc;
+    p->tf->ra = p->cb.ra;
+    p->tf->sp = p->cb.sp;
+    p->tf->gp = p->cb.gp;
+    p->tf->tp = p->cb.tp;
+    p->tf->t0 = p->cb.t0;
+    p->tf->t1 = p->cb.t1;
+    p->tf->t2 = p->cb.t2;
+    p->tf->s0 = p->cb.s0;
+    p->tf->s1 = p->cb.s1;
+    p->tf->a0 = p->cb.a0;
+    p->tf->a1 = p->cb.a1;
+    p->tf->a2 = p->cb.a2;
+    p->tf->a3 = p->cb.a3;
+    p->tf->a4 = p->cb.a4;
+    p->tf->a5 = p->cb.a5;
+    p->tf->a6 = p->cb.a6;
+    p->tf->a7 = p->cb.a7;
+    p->tf->s2 = p->cb.s2;
+    p->tf->s3 = p->cb.s3;
+    p->tf->s4 = p->cb.s4;
+    p->tf->s5 = p->cb.s5;
+    p->tf->s6 = p->cb.s6;
+    p->tf->s7 = p->cb.s7;
+    p->tf->s8 = p->cb.s8;
+    p->tf->s9 = p->cb.s9;
+    p->tf->s10 = p->cb.s10;
+    p->tf->s11 = p->cb.s11;
+    p->tf->t3 = p->cb.t3;
+    p->tf->t4 = p->cb.t4;
+    p->tf->t5 = p->cb.t5;
+    p->tf->t6 = p->cb.t6;
+}
+
+int send_to_console = 1, select_window = 0;
+
 uint64 window_intr(int c) {
-  
-  // input was not used
+  if (c == C('Z')) {
+    send_to_console = 0;
+    return 1;
+  }
+  struct proc *p = windows[selected_win].proc;
+  if (c == C('X')) {
+    p->killed = 1;
+    return 1;
+  }
+  if (c == C('N')) {
+    select_window = 1;
+    return 1;
+  }
+  if (select_window) {
+    if (selected_win >= 0) {
+      select_window = 0;
+      selected_win = c - '0';
+      if (selected_win >= 6) {
+        selected_win = 6;
+      } else if (selected_win < 0) {
+        selected_win = 0;
+      }
+      printf("switched to window %d\n", selected_win);
+    } else {
+      printf("no windows open!\n");
+    }
+    return 1;
+  }
+  if (send_to_console) {
+    return 0;
+  }
+  printf("selected_win = %d, p = %p, pid = %d, p->cb.entered = %d, windows[selected_win].key_cb = %p, key = %d\n",
+         selected_win, p, windows[selected_win].pid, p->cb.entered, windows[selected_win].key_cb, c);
+  if (selected_win >= 0 && !p->cb.entered && windows[selected_win].key_cb != NO_KEYCB) {
+    saveregs(p);
+    printf("going to handler %p\n", windows[selected_win].key_cb);
+    p->tf->a1 = (uint64)c;
+    p->tf->epc = windows[selected_win].key_cb;
+    p->cb.entered = 1;
+  }
+  send_to_console = 1;
+  return 1;
+}
+
+uint64 sys_cb_return() {
+  struct proc *p = myproc();
+  printf("cb return pid = %d\n", p->pid);
+  restoreregs(p);
+  p->cb.entered = 0;
   return 0;
 }

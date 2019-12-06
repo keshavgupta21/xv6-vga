@@ -29,3 +29,5 @@
 
 #define SYS_show_window 26
 #define SYS_close_window 27
+#define SYS_reg_keycb 28
+#define SYS_cb_return 29

@@ -13,8 +13,9 @@ typedef struct {
 
 typedef struct {
     int pid;
+    struct proc * proc;
     char fbuf[WINDOW_HEIGHT * WINDOW_WIDTH];
-    void (*key_cb)(int);
+    uint64 key_cb;
 } window_t;
 
 vga_config_t vga_config_img_320_300[] = {

@@ -188,6 +188,8 @@ void            show_window_text(char *, int, int);
 uint64          window_intr(int);
 uint64          sys_show_window();
 uint64          sys_close_window();
+uint64          sys_reg_keycb();
+uint64          sys_cb_return();
 
 // virtio_disk.c
 void            virtio_disk_init(int);

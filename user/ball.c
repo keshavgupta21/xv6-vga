@@ -11,10 +11,10 @@
 #define PADDING_SIZE 1
 #define BALL_WIDTH 5
 
-#define UP_ARROW 24
-#define DOWN_ARROW 25
-#define RIGHT_ARROW 26
-#define LEFT_ARROW 27
+#define UP_ARROW 'w'
+#define DOWN_ARROW 's'
+#define RIGHT_ARROW 'd'
+#define LEFT_ARROW 'a'
 
 char fbuf[WINDOW_HEIGHT][WINDOW_WIDTH];
 char __attribute((unused)) discard;
@@ -88,19 +88,21 @@ static int abs(int x) {
   return -x;
 }
 
-void key_handler(char key) {
-  if (key == UP_ARROW) {
-    ball_vel_x = abs(ball_vel_x);
-  }
-  else if (key == DOWN_ARROW) {
-    ball_vel_x = -abs(ball_vel_x);
-  }
-  else if (key == RIGHT_ARROW) {
-    ball_vel_y = abs(ball_vel_y);
-  }
-  else if (key == LEFT_ARROW) {
+void key_cb(uint64 key, uint64 key1) {
+  printf("handler called with key = %d, key1 = %d\n", key, key1);
+  if (key1 == UP_ARROW) {
     ball_vel_y = -abs(ball_vel_y);
   }
+  else if (key1 == DOWN_ARROW) {
+    ball_vel_y = abs(ball_vel_y);
+  }
+  else if (key1 == RIGHT_ARROW) {
+    ball_vel_x = abs(ball_vel_x);
+  }
+  else if (key1 == LEFT_ARROW) {
+    ball_vel_x = -abs(ball_vel_x);
+  }
+  cb_return();
 }
 
 void main(void) {
@@ -108,6 +110,8 @@ void main(void) {
   ball_center_y = WINDOW_HEIGHT / 2;
   ball_vel_x = 2;
   ball_vel_y = 1;
+
+  reg_keycb(key_cb);
 
   while (1) {
     draw_background();
@@ -118,8 +122,6 @@ void main(void) {
     sleep(1);
     update_center();
   }
-
-
   
   read(0, &discard, 1);
   close_window();
