@@ -25,7 +25,7 @@
 #include "palette.h"
 
 #define C(x)  ((x)-'@')  // Control-x
-#define CONTROL_COLOR 0xe0
+#define CONTROL_COLOR 0x0c
 
 #define NO_KEYCB 0xffffffffffffffffull
 
@@ -160,15 +160,13 @@ void add_control_line() {
   x_max = WINDOW_WIDTH;
   y_min = 0;
   y_max = WINDOW_HEIGHT;
-  for (int i = x_min; i <= x_max; i++) {
+  for (int i = x_min; i <= x_max + 1; i++) {
     put_pixel(y_max, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
-    // put_pixel(y_max + 1, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
-    // put_pixel(y_max + 2, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_max + 1, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
   }
-  for (int i = y_min; i <= y_max; i++) {
+  for (int i = y_min; i <= y_max + 1; i++) {
     put_pixel(i, x_max, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
-    // put_pixel(i, x_max + 1, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
-    // put_pixel(i, x_max + 2, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max + 1, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
   }
 
   // window 1
@@ -176,24 +174,29 @@ void add_control_line() {
   x_max = 2*WINDOW_WIDTH + WINDOW_PAD;;
   y_min = 0;
   y_max = WINDOW_HEIGHT;
-  for (int i = x_min; i <= x_max; i++) {
+  for (int i = x_min - 1; i <= x_max + 1; i++) {
     put_pixel(y_max, i, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_max + 1, i, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
   }
-  for (int i = y_min; i <= y_max; i++) {
+  for (int i = y_min - 1; i <= y_max + 1; i++) {
     put_pixel(i, x_min, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_min - 1, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
     put_pixel(i, x_max, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max + 1, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
   }
 
   // window 2
   x_min = 2 * WINDOW_WIDTH + 2 * WINDOW_PAD - 1;
-  x_max = 3 * WINDOW_WIDTH + 2 * WINDOW_PAD;;
+  x_max = WIDTH - 1;
   y_min = 0;
   y_max = WINDOW_HEIGHT;
-  for (int i = x_min; i <= x_max; i++) {
+  for (int i = x_min - 1; i <= x_max; i++) {
     put_pixel(y_max, i, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_max + 1, i, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
   }
-  for (int i = y_min; i <= y_max; i++) {
+  for (int i = y_min - 1; i <= y_max; i++) {
     put_pixel(i, x_min, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_min - 1, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
   }
 
   // window 3
@@ -201,36 +204,43 @@ void add_control_line() {
   x_max = WINDOW_WIDTH;
   y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
   y_max = HEIGHT - 1;
-  for (int i = x_min; i <= x_max; i++) {
+  for (int i = x_min - 1; i <= x_max; i++) {
     put_pixel(y_min, i, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_min - 1, i, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
   }
-  for (int i = y_min; i <= y_max; i++) {
+  for (int i = y_min - 1; i <= y_max; i++) {
     put_pixel(i, x_max, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max + 1, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
   }
 
   // window 4
   x_min = WINDOW_WIDTH + WINDOW_PAD - 1;
-  x_max = 2*WINDOW_WIDTH + WINDOW_PAD;;
+  x_max = 2 * WINDOW_WIDTH + WINDOW_PAD;;
   y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
   y_max = HEIGHT - 1;
-  for (int i = x_min; i <= x_max; i++) {
+  for (int i = x_min - 1; i <= x_max + 1; i++) {
     put_pixel(y_min, i, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_min - 1, i, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
   }
-  for (int i = y_min; i <= y_max; i++) {
+  for (int i = y_min - 1; i <= y_max; i++) {
     put_pixel(i, x_min, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_min - 1, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
     put_pixel(i, x_max, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max + 1, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
   }
 
   // window 5
   x_min = 2 * WINDOW_WIDTH + 2 * WINDOW_PAD - 1;
-  x_max = 3 * WINDOW_WIDTH + 2 * WINDOW_PAD;;
+  x_max = WIDTH - 1;
   y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
   y_max = HEIGHT - 1;
-  for (int i = x_min; i <= x_max; i++) {
+  for (int i = x_min - 1; i <= x_max; i++) {
     put_pixel(y_min, i, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_min - 1, i, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
   }
-  for (int i = y_min; i <= y_max; i++) {
+  for (int i = y_min - 1; i <= y_max; i++) {
     put_pixel(i, x_min, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_min - 1, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
   }  
 }
 
