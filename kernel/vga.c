@@ -176,11 +176,11 @@ uint64 sys_show_window() {
     } else {
       win_loc = empty_loc;
       selected_win = win_loc;
+      printf("controlling window %d\n", selected_win);
       windows[win_loc].pid = p->pid;
       windows[win_loc].proc = p;
     }
-  }
-
+  } 
   copyin(p->pagetable, windows[win_loc].fbuf, fbuf_usr, WINDOW_WIDTH * WINDOW_HEIGHT);
 
   render_window(win_loc);
@@ -193,7 +193,17 @@ uint64 sys_close_window() {
   for (int win_loc = 5; win_loc >= 0; win_loc--) {
     if (windows[win_loc].pid == p->pid) {
       windows[win_loc].pid = -1;
-      if (win_loc == selected_win) { selected_win = -1; }
+      if (win_loc == selected_win) {
+        for (int i = 0; i < 6; i++) {
+          if (windows[i].pid != -1) {
+            selected_win = i;
+            printf("controlling window %d\n", i);
+          }
+        }
+        if (selected_win == -1) {
+          printf("no window is controlled\n");
+        }
+      }
       for (int i = 0; i < WINDOW_HEIGHT; i++) {
         for (int j = 0; j < WINDOW_WIDTH; j++) {
           windows[win_loc].fbuf[i*WINDOW_WIDTH + j] = BACKGROUND;
@@ -207,13 +217,13 @@ uint64 sys_close_window() {
 }
 
 uint64 sys_reg_keycb() {
-  printf("reg cb called from pid %d\n", myproc()->pid);
+  // printf("reg cb called from pid %d\n", myproc()->pid);
   uint64 keycbaddr;
   argaddr(0, &keycbaddr);
   struct proc * p = myproc();
   for (int win_loc = 5; win_loc >= 0; win_loc--) {
     if (windows[win_loc].proc == p) {
-      printf("setting window %d keycb to %p\n", win_loc, keycbaddr);
+      // printf("setting window %d keycb to %p\n", win_loc, keycbaddr);
       windows[win_loc].key_cb = keycbaddr;
       return 0;
     }
@@ -230,6 +240,7 @@ uint64 sys_reg_keycb() {
     windows[empty_loc].pid = p->pid;
     windows[empty_loc].proc = p;
     windows[empty_loc].key_cb = keycbaddr;
+    // printf("reserved window %d\n", empty_loc);
     selected_win = empty_loc;
   }
   return 0;
@@ -332,15 +343,15 @@ uint64 window_intr(int c) {
       }
       printf("switched to window %d\n", selected_win);
     } else {
-      printf("no windows open!\n");
+      printf("no windows contolled!\n");
     }
     return 1;
   }
   if (send_to_console) {
     return 0;
   }
-  printf("selected_win = %d, p = %p, pid = %d, p->cb.entered = %d, windows[selected_win].key_cb = %p, key = %d\n",
-         selected_win, p, windows[selected_win].pid, p->cb.entered, windows[selected_win].key_cb, c);
+  // printf("selected_win = %d, p = %p, pid = %d, p->cb.entered = %d, windows[selected_win].key_cb = %p, key = %d\n",
+  //        selected_win, p, windows[selected_win].pid, p->cb.entered, windows[selected_win].key_cb, c);
   if (selected_win >= 0 && !p->cb.entered && windows[selected_win].key_cb != NO_KEYCB) {
     saveregs(p);
     printf("going to handler %p\n", windows[selected_win].key_cb);
