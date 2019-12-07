@@ -23,9 +23,11 @@
 #include "defs.h"
 #include "vga.h"
 #include "palette.h"
-#include "font.h"
 
 #define C(x)  ((x)-'@')  // Control-x
+#define CONTROL_COLOR 0xc0
+// rr gggbbb
+// 11 000000
 
 #define NO_KEYCB 0xffffffffffffffffull
 
@@ -146,42 +148,115 @@ void writeport(uint32 port, uint8 index, uint8 val) {
 
 // WINDOW MANAGER FUNCTIONALITY
 
-void draw_char(char c, int x, int y) {
-  for (int row = 0; row < 8; row++) {
-    for (int col = 0; col < 5; col++) {
-      if (VGA_FONT[c * 8 + row] & (1 << (7 - col))) {
-        vga_buf[(row + y) * WIDTH + (col + x)] = 0x00;
-      }
-    }
-  }
+
+void put_pixel(int y, int x, char c) {
+  vga_buf[y * WIDTH + x] = c;
 }
 
-void show_window_text(char * text, int x0, int y0) {
-  int n = strlen((const char *) text);
-  int w = (n + 2) * 5;
-  int h = 18;
 
-  for (int x = x0; x < x0 + w; x++) {
-    for (int y = y0; y < y0 + h; y++) {
-      vga_buf[y * WIDTH + x] = 0xff;
-    }
+void add_control_line() {
+  int x_min, x_max, y_min, y_max;
+
+  // window 0
+  x_min = 0;
+  x_max = WINDOW_WIDTH;
+  y_min = 0;
+  y_max = WINDOW_HEIGHT;
+  for (int i = x_min; i <= x_max + 1; i++) {
+    put_pixel(y_max, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_max + 1, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
   }
-  int pos = x0 + 5;
-  for (char *c = text; *c != 0; c++) {
-    draw_char(*c, pos, y0 + 5);
-    pos += 5;
+  for (int i = y_min; i <= y_max + 1; i++) {
+    put_pixel(i, x_max, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max + 1, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
   }
+
+  // window 1
+  x_min = WINDOW_WIDTH + WINDOW_PAD - 1;
+  x_max = 2*WINDOW_WIDTH + WINDOW_PAD;;
+  y_min = 0;
+  y_max = WINDOW_HEIGHT;
+  for (int i = x_min - 1; i <= x_max + 1; i++) {
+    put_pixel(y_max, i, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_max + 1, i, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min - 1; i <= y_max + 1; i++) {
+    put_pixel(i, x_min, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_min - 1, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max + 1, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 2
+  x_min = 2 * WINDOW_WIDTH + 2 * WINDOW_PAD - 1;
+  x_max = WIDTH - 1;
+  y_min = 0;
+  y_max = WINDOW_HEIGHT;
+  for (int i = x_min - 1; i <= x_max; i++) {
+    put_pixel(y_max, i, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_max + 1, i, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min - 1; i <= y_max; i++) {
+    put_pixel(i, x_min, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_min - 1, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 3
+  x_min = 0;
+  x_max = WINDOW_WIDTH;
+  y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
+  y_max = HEIGHT - 1;
+  for (int i = x_min - 1; i <= x_max; i++) {
+    put_pixel(y_min, i, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_min - 1, i, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min - 1; i <= y_max; i++) {
+    put_pixel(i, x_max, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max + 1, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 4
+  x_min = WINDOW_WIDTH + WINDOW_PAD - 1;
+  x_max = 2 * WINDOW_WIDTH + WINDOW_PAD;;
+  y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
+  y_max = HEIGHT - 1;
+  for (int i = x_min - 1; i <= x_max + 1; i++) {
+    put_pixel(y_min, i, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_min - 1, i, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min - 1; i <= y_max; i++) {
+    put_pixel(i, x_min, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_min - 1, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max + 1, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 5
+  x_min = 2 * WINDOW_WIDTH + 2 * WINDOW_PAD - 1;
+  x_max = WIDTH - 1;
+  y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
+  y_max = HEIGHT - 1;
+  for (int i = x_min - 1; i <= x_max; i++) {
+    put_pixel(y_min, i, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(y_min - 1, i, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min - 1; i <= y_max; i++) {
+    put_pixel(i, x_min, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_min - 1, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
+  }  
 }
 
 void render_window(int win_loc) {
   int x0 = (win_loc % 3) * (WINDOW_WIDTH + WINDOW_PAD);
   int y0 = (win_loc / 3) * (WINDOW_HEIGHT + WINDOW_PAD);
-  
+
   for (int y = y0; y < y0 + WINDOW_HEIGHT; y++) {
     for (int x = x0; x < x0 + WINDOW_WIDTH; x++) {
-      vga_buf[y * WIDTH + x] = windows[win_loc].fbuf[(y - y0)*WINDOW_WIDTH + (x - x0)];
+      put_pixel(y, x, windows[win_loc].fbuf[(y - y0)*WINDOW_WIDTH + (x - x0)]);
     }
   }
+
+  add_control_line();
 }
 
 uint64 sys_show_window() {
@@ -203,11 +278,11 @@ uint64 sys_show_window() {
     } else {
       win_loc = empty_loc;
       selected_win = win_loc;
+      // printf("controlling window %d\n", selected_win);
       windows[win_loc].pid = p->pid;
       windows[win_loc].proc = p;
     }
-  }
-
+  } 
   copyin(p->pagetable, windows[win_loc].fbuf, fbuf_usr, WINDOW_WIDTH * WINDOW_HEIGHT);
 
   render_window(win_loc);
@@ -220,7 +295,19 @@ uint64 sys_close_window() {
   for (int win_loc = 5; win_loc >= 0; win_loc--) {
     if (windows[win_loc].pid == p->pid) {
       windows[win_loc].pid = -1;
-      if (win_loc == selected_win) { selected_win = -1; }
+      if (win_loc == selected_win) {
+        selected_win = -1;
+        for (int i = 0; i < 6; i++) {
+          if (windows[i].pid != -1) {
+            selected_win = i;
+            printf("controlling window %d\n", i);
+            break;
+          }
+        }
+        if (selected_win == -1) {
+          printf("no window is controlled\n");
+        }
+      }
       for (int i = 0; i < WINDOW_HEIGHT; i++) {
         for (int j = 0; j < WINDOW_WIDTH; j++) {
           windows[win_loc].fbuf[i*WINDOW_WIDTH + j] = BACKGROUND;
@@ -234,13 +321,13 @@ uint64 sys_close_window() {
 }
 
 uint64 sys_reg_keycb() {
-  printf("reg cb called from pid %d\n", myproc()->pid);
+  // printf("reg cb called from pid %d\n", myproc()->pid);
   uint64 keycbaddr;
   argaddr(0, &keycbaddr);
   struct proc * p = myproc();
   for (int win_loc = 5; win_loc >= 0; win_loc--) {
     if (windows[win_loc].proc == p) {
-      printf("setting window %d keycb to %p\n", win_loc, keycbaddr);
+      // printf("setting window %d keycb to %p\n", win_loc, keycbaddr);
       windows[win_loc].key_cb = keycbaddr;
       return 0;
     }
@@ -257,6 +344,7 @@ uint64 sys_reg_keycb() {
     windows[empty_loc].pid = p->pid;
     windows[empty_loc].proc = p;
     windows[empty_loc].key_cb = keycbaddr;
+    // printf("reserved window %d\n", empty_loc);
     selected_win = empty_loc;
   }
   return 0;
@@ -351,23 +439,30 @@ uint64 window_intr(int c) {
   if (select_window) {
     if (selected_win >= 0) {
       select_window = 0;
-      selected_win = c - '0';
-      if (selected_win >= 6) {
-        selected_win = 6;
-      } else if (selected_win < 0) {
-        selected_win = 0;
+      int candidate = c - '0';
+      if (candidate < 0) {
+        candidate = 0;
       }
-      printf("switched to window %d\n", selected_win);
+      if (candidate > 5) {
+        candidate = 5;
+      }
+      if (windows[candidate].pid != -1) {
+        selected_win = candidate;
+        printf("switched to window %d\n", selected_win);
+      }
+      else {
+        printf("no window there!");
+      }
     } else {
-      printf("no windows open!\n");
+      printf("no windows contolled!\n");
     }
     return 1;
   }
   if (send_to_console) {
     return 0;
   }
-  printf("selected_win = %d, p = %p, pid = %d, p->cb.entered = %d, windows[selected_win].key_cb = %p, key = %d\n",
-         selected_win, p, windows[selected_win].pid, p->cb.entered, windows[selected_win].key_cb, c);
+  // printf("selected_win = %d, p = %p, pid = %d, p->cb.entered = %d, windows[selected_win].key_cb = %p, key = %d\n",
+  //        selected_win, p, windows[selected_win].pid, p->cb.entered, windows[selected_win].key_cb, c);
   if (selected_win >= 0 && !p->cb.entered && windows[selected_win].key_cb != NO_KEYCB) {
     saveregs(p);
     printf("going to handler %p\n", windows[selected_win].key_cb);

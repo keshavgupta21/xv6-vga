@@ -3,7 +3,7 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-#define BACKGROUND_COLOR 0xf0
+#define BACKGROUND_COLOR 0x72
 #define BALL_COLOR 0xff
 #define PAD_COLOR 0xff
 #define WINDOW_WIDTH 100

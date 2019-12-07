@@ -148,6 +148,7 @@ UPROGS=\
 	$U/_alloctest\
 	$U/_ball\
 	$U/_brot\
+	$U/_count\
 
 fs.img: mkfs/mkfs README user/xargstest.sh $(UPROGS)
 	mkfs/mkfs fs.img README user/xargstest.sh $(UPROGS)
