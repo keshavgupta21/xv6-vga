@@ -435,13 +435,20 @@ uint64 window_intr(int c) {
   if (select_window) {
     if (selected_win >= 0) {
       select_window = 0;
-      selected_win = c - '0';
-      if (selected_win >= 6) {
-        selected_win = 6;
-      } else if (selected_win < 0) {
-        selected_win = 0;
+      int candidate = c - '0';
+      if (candidate < 0) {
+        candidate = 0;
       }
-      printf("switched to window %d\n", selected_win);
+      if (candidate > 5) {
+        candidate = 5;
+      }
+      if (windows[candidate].pid != -1) {
+        selected_win = candidate;
+        printf("switched to window %d\n", selected_win);
+      }
+      else {
+        printf("no window there!");
+      }
     } else {
       printf("no windows contolled!\n");
     }
