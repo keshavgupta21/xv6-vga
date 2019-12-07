@@ -5,17 +5,10 @@
 #include "user/font.h"
 
 #define BACKGROUND_COLOR 0xf0
-#define BALL_COLOR 0xff
 #define PAD_COLOR 0xff
 #define WINDOW_WIDTH 100
 #define WINDOW_HEIGHT 95
 #define PADDING_SIZE 1
-#define BALL_WIDTH 5
-
-#define UP_ARROW 'w'
-#define DOWN_ARROW 's'
-#define RIGHT_ARROW 'd'
-#define LEFT_ARROW 'a'
 
 char fbuf[WINDOW_HEIGHT][WINDOW_WIDTH];
 char __attribute((unused)) discard;

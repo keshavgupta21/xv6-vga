@@ -25,7 +25,9 @@
 #include "palette.h"
 
 #define C(x)  ((x)-'@')  // Control-x
-#define CONTROL_COLOR 0x0c
+#define CONTROL_COLOR 0xc0
+// rr gggbbb
+// 11 000000
 
 #define NO_KEYCB 0xffffffffffffffffull
 
