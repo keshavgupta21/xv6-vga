@@ -25,6 +25,7 @@
 #include "palette.h"
 
 #define C(x)  ((x)-'@')  // Control-x
+#define CONTROL_COLOR 0xe0
 
 #define NO_KEYCB 0xffffffffffffffffull
 
@@ -146,15 +147,104 @@ void writeport(uint32 port, uint8 index, uint8 val) {
 // WINDOW MANAGER FUNCTIONALITY
 
 
+void put_pixel(int y, int x, char c) {
+  vga_buf[y * WIDTH + x] = c;
+}
+
+
+void add_control_line() {
+  int x_min, x_max, y_min, y_max;
+
+  // window 0
+  x_min = 0;
+  x_max = WINDOW_WIDTH;
+  y_min = 0;
+  y_max = WINDOW_HEIGHT;
+  for (int i = x_min; i <= x_max; i++) {
+    put_pixel(y_max, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+    // put_pixel(y_max + 1, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+    // put_pixel(y_max + 2, i, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min; i <= y_max; i++) {
+    put_pixel(i, x_max, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+    // put_pixel(i, x_max + 1, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+    // put_pixel(i, x_max + 2, (selected_win == 0) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 1
+  x_min = WINDOW_WIDTH + WINDOW_PAD - 1;
+  x_max = 2*WINDOW_WIDTH + WINDOW_PAD;;
+  y_min = 0;
+  y_max = WINDOW_HEIGHT;
+  for (int i = x_min; i <= x_max; i++) {
+    put_pixel(y_max, i, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min; i <= y_max; i++) {
+    put_pixel(i, x_min, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max, (selected_win == 1) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 2
+  x_min = 2 * WINDOW_WIDTH + 2 * WINDOW_PAD - 1;
+  x_max = 3 * WINDOW_WIDTH + 2 * WINDOW_PAD;;
+  y_min = 0;
+  y_max = WINDOW_HEIGHT;
+  for (int i = x_min; i <= x_max; i++) {
+    put_pixel(y_max, i, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min; i <= y_max; i++) {
+    put_pixel(i, x_min, (selected_win == 2) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 3
+  x_min = 0;
+  x_max = WINDOW_WIDTH;
+  y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
+  y_max = HEIGHT - 1;
+  for (int i = x_min; i <= x_max; i++) {
+    put_pixel(y_min, i, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min; i <= y_max; i++) {
+    put_pixel(i, x_max, (selected_win == 3) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 4
+  x_min = WINDOW_WIDTH + WINDOW_PAD - 1;
+  x_max = 2*WINDOW_WIDTH + WINDOW_PAD;;
+  y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
+  y_max = HEIGHT - 1;
+  for (int i = x_min; i <= x_max; i++) {
+    put_pixel(y_min, i, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min; i <= y_max; i++) {
+    put_pixel(i, x_min, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+    put_pixel(i, x_max, (selected_win == 4) ? CONTROL_COLOR : BACKGROUND);
+  }
+
+  // window 5
+  x_min = 2 * WINDOW_WIDTH + 2 * WINDOW_PAD - 1;
+  x_max = 3 * WINDOW_WIDTH + 2 * WINDOW_PAD;;
+  y_min = WINDOW_HEIGHT + WINDOW_PAD - 1;
+  y_max = HEIGHT - 1;
+  for (int i = x_min; i <= x_max; i++) {
+    put_pixel(y_min, i, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
+  }
+  for (int i = y_min; i <= y_max; i++) {
+    put_pixel(i, x_min, (selected_win == 5) ? CONTROL_COLOR : BACKGROUND);
+  }  
+}
+
 void render_window(int win_loc) {
   int x0 = (win_loc % 3) * (WINDOW_WIDTH + WINDOW_PAD);
   int y0 = (win_loc / 3) * (WINDOW_HEIGHT + WINDOW_PAD);
-  
+
   for (int y = y0; y < y0 + WINDOW_HEIGHT; y++) {
     for (int x = x0; x < x0 + WINDOW_WIDTH; x++) {
-      vga_buf[y * WIDTH + x] = windows[win_loc].fbuf[(y - y0)*WINDOW_WIDTH + (x - x0)];
+      put_pixel(y, x, windows[win_loc].fbuf[(y - y0)*WINDOW_WIDTH + (x - x0)]);
     }
   }
+
+  add_control_line();
 }
 
 uint64 sys_show_window() {
@@ -176,7 +266,7 @@ uint64 sys_show_window() {
     } else {
       win_loc = empty_loc;
       selected_win = win_loc;
-      printf("controlling window %d\n", selected_win);
+      // printf("controlling window %d\n", selected_win);
       windows[win_loc].pid = p->pid;
       windows[win_loc].proc = p;
     }
