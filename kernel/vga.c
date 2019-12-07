@@ -427,6 +427,10 @@ uint64 window_intr(int c) {
     send_to_console = 0;
     return 1;
   }
+  if (selected_win == -1) {
+    // printf("no window selected!\n");
+    return 0;
+  }
   struct proc *p = windows[selected_win].proc;
   if (c == C('X')) {
     p->killed = 1;
@@ -465,7 +469,7 @@ uint64 window_intr(int c) {
   //        selected_win, p, windows[selected_win].pid, p->cb.entered, windows[selected_win].key_cb, c);
   if (selected_win >= 0 && !p->cb.entered && windows[selected_win].key_cb != NO_KEYCB) {
     saveregs(p);
-    printf("going to handler %p\n", windows[selected_win].key_cb);
+    // printf("going to handler %p\n", windows[selected_win].key_cb);
     p->tf->a1 = (uint64)c;
     p->tf->epc = windows[selected_win].key_cb;
     p->cb.entered = 1;
@@ -476,7 +480,7 @@ uint64 window_intr(int c) {
 
 uint64 sys_cb_return() {
   struct proc *p = myproc();
-  printf("cb return pid = %d\n", p->pid);
+  // printf("cb return pid = %d\n", p->pid);
   restoreregs(p);
   p->cb.entered = 0;
   return 0;
