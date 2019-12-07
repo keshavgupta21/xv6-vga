@@ -23,7 +23,6 @@
 #include "defs.h"
 #include "vga.h"
 #include "palette.h"
-#include "font.h"
 
 #define C(x)  ((x)-'@')  // Control-x
 
@@ -146,32 +145,6 @@ void writeport(uint32 port, uint8 index, uint8 val) {
 
 // WINDOW MANAGER FUNCTIONALITY
 
-void draw_char(char c, int x, int y) {
-  for (int row = 0; row < 8; row++) {
-    for (int col = 0; col < 5; col++) {
-      if (VGA_FONT[c * 8 + row] & (1 << (7 - col))) {
-        vga_buf[(row + y) * WIDTH + (col + x)] = 0x00;
-      }
-    }
-  }
-}
-
-void show_window_text(char * text, int x0, int y0) {
-  int n = strlen((const char *) text);
-  int w = (n + 2) * 5;
-  int h = 18;
-
-  for (int x = x0; x < x0 + w; x++) {
-    for (int y = y0; y < y0 + h; y++) {
-      vga_buf[y * WIDTH + x] = 0xff;
-    }
-  }
-  int pos = x0 + 5;
-  for (char *c = text; *c != 0; c++) {
-    draw_char(*c, pos, y0 + 5);
-    pos += 5;
-  }
-}
 
 void render_window(int win_loc) {
   int x0 = (win_loc % 3) * (WINDOW_WIDTH + WINDOW_PAD);
