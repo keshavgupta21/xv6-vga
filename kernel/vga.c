@@ -294,10 +294,12 @@ uint64 sys_close_window() {
     if (windows[win_loc].pid == p->pid) {
       windows[win_loc].pid = -1;
       if (win_loc == selected_win) {
+        selected_win = -1;
         for (int i = 0; i < 6; i++) {
           if (windows[i].pid != -1) {
             selected_win = i;
             printf("controlling window %d\n", i);
+            break;
           }
         }
         if (selected_win == -1) {
